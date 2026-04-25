@@ -1,0 +1,61 @@
+\documentclass[]{report}
+\usepackage{amsmath}
+\usepackage[spanish]{babel}
+
+% Título y detalles del TP
+\title{Introducción al Modelado Continuo \\[0.5cm]
+	Trabajo Práctico 1 \\[0.5cm]
+	Trayectorias de Kepler y Corrección Relativista}
+
+% Sección de integrantes y grupo
+\author{
+	\textbf{Grupo: 11} \\ [1cm]
+	\begin{tabular}{llll}
+		\textbf{Apellido} & \textbf{Nombre} & \textbf{Libreta} \\ \hline
+		Wilders Azara & Santiago & 350/19  \\
+		Peralta & Martín & 428/22 \\
+		Vernay & Jerónimo & ??? \\
+	\end{tabular}
+}
+
+%Fecha
+\date{\today}
+
+\begin{document}
+	\maketitle
+	%\begin{abstract}
+	%\end{abstract}
+	
+	% --- Desarrollo de los ejercicios ---
+	
+	\section*{Ejercicio 1}
+	
+	$$\ddot{u}(\theta) + u(\theta) - \frac{1}{\alpha} - \delta u^2(\theta) = 0$$
+	
+	Reducción de orden:
+	
+	\begin{equation*}
+		\begin{aligned}
+			y_1 &= u \\
+			y_2 &= \dot{u} \\
+			\dot{y_2} &= \ddot{u}
+		\end{aligned}
+		\quad \implies \quad 
+		\dot{y_2} + y_1 - 1/a - \delta y_1^2 = 0
+		\quad \implies \quad
+		\begin{aligned}
+			\dot{y_1} &= y_2 \\
+			\dot{y_2} &= \delta y_1^2 + 1/a - y_1
+		\end{aligned}
+	\end{equation*}
+	
+	El estado del sistema queda definido por la inversa de la distancia radial ($y_1 = u(\theta)$) y su tasa de cambio respecto al ángulo ($y_2 = \dot{u}(\theta)$). Como el ángulo $\theta$, la variable independiente, no aparece de forma explicita en las ecuaciones, obtenemos un sistema autónomo no lineal de primer orden.
+	\newpage
+	
+	\section*{Ejercicio 2}
+	
+	\newpage
+	\section*{Ejercicio 3}
+
+	
+\end{document}
