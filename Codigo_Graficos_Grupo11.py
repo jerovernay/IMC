@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import solve_ivp
 from matplotlib import animation
+from matplotlib.gridspec import GridSpec
 
 # Configuración visual
 plt.style.use('default')
@@ -100,6 +101,39 @@ for ax, eps in zip(axes2, eps_cons):
      ax.set_xlabel('$u$'); ax.set_ylabel('$\dot{u}$')
      ax.legend()
 
+# --- PUNTO 2: Órbitas Cartesianas ---
+fig_cart = plt.figure(figsize=(8, 8))
+ax_cart = fig_cart.add_subplot(1, 1, 1)
+
+eps_cart = [0.4, 0.7, 1.2]
+colores_c = ['#1f77b4', '#ff7f0e', '#d62728']
+
+for ep, col in zip(eps_cart, colores_c):
+    # Usamos alpha_base = 1.0 y delta = 0.0 (caso clásico)
+    t, u, _ = integrar_sistema(ep, 1.0, 0.0, vueltas=1)
+    
+    r = 1 / u
+    x = r * np.cos(t)
+    y = r * np.sin(t)
+    
+    mascara = (np.abs(x) < 5) & (np.abs(y) < 5)
+    
+    ax_cart.plot(x[mascara], y[mascara], color=col, lw=2.5, label=f'$\epsilon={ep}$')
+
+ax_cart.plot(0, 0, 'yo', markersize=12, markeredgecolor='black', label='Sol') 
+ax_cart.set_title('Punto 2: Geometría de las Órbitas (Plano x, y)')
+ax_cart.set_xlabel('x')
+ax_cart.set_ylabel('y')
+
+# Forzamos los límites absolutos de la ventana
+ax_cart.set_xlim(-4, 3)
+ax_cart.set_ylim(-3.5, 3.5)
+
+ax_cart.set_aspect('equal') # Mantiene la proporción redonda
+ax_cart.grid(True, linestyle='--', alpha=0.6)
+ax_cart.legend(loc='upper right')
+
+plt.show()
 
 # =====================================================================
 # --- 3. PUNTO 3: COMPARATIVA Y PRECESIÓN ---
@@ -110,7 +144,7 @@ t_cl, u_cl, ud_cl = integrar_sistema(0.5, alpha_base, 0.0, vueltas=10)
 t_re, u_re, ud_re = integrar_sistema(0.5, alpha_base, delta_rel, vueltas=10)
 
 fig_precesion = plt.figure(figsize=(14, 6))
-fig_precesion.suptitle(f'Punto 3: Precesión del Perihelio ($\delta = {delta_rel}$)', fontsize=16)
+fig_precesion.suptitle(f'Punto 3: Precesión del Perihelio ($\delta = {delta_rel}$ y α = 1)', fontsize=16)
 
 ax_f = fig_precesion.add_subplot(1, 2, 1)
 dibujar_quiver(ax_f, alpha_base, delta_rel)
@@ -181,8 +215,81 @@ ax5.legend()
 plt.tight_layout()
 plt.show()
 
+
 # =====================================================================
-# --- 5. ANIMACIÓN 3D (Eje Z = Ángulo Theta) ---
+# --- VARIACIÓN DE PARÁMETROS (Grilla Cartesiana 10x10) ---
+# =====================================================================
+
+fig_var_cart = plt.figure(figsize=(16, 11))
+fig_var_cart.suptitle('Punto 3: Variación de Parámetros en Coordenadas Cartesianas', fontsize=16)
+
+# Grilla alineada a la izquierda (no centrada)
+gs = GridSpec(2, 6, figure=fig_var_cart)
+ax1 = fig_var_cart.add_subplot(gs[0, 0:2])
+ax2 = fig_var_cart.add_subplot(gs[0, 2:4])
+ax3 = fig_var_cart.add_subplot(gs[0, 4:6])
+ax4 = fig_var_cart.add_subplot(gs[1, 0:2])
+ax5 = fig_var_cart.add_subplot(gs[1, 2:4])
+
+axes_cart = [ax1, ax2, ax3, ax4, ax5]
+
+def graficar_cartesiano(ax, t, u, label_text, color=None):
+    """Convierte a cartesianas y aplica el filtro de la caja 10x10 (-5 a 5)"""
+    r = 1 / u
+    x = r * np.cos(t)
+    y = r * np.sin(t)
+    
+    # Filtro infalible para evitar que el infinito rompa el gráfico
+    mascara = (np.abs(x) <= 5) & (np.abs(y) <= 5)
+    
+    if color:
+        ax.plot(x[mascara], y[mascara], label=label_text, color=color, lw=1.5)
+    else:
+        ax.plot(x[mascara], y[mascara], label=label_text, lw=1.5)
+
+# 1. Variando Alpha (Epsilon 0.5)
+for al in [0.5, 0.9, 1.4]:
+    t, u, _ = integrar_sistema(0.5, al, delta_rel, vueltas=6)
+    graficar_cartesiano(ax1, t, u, f'$\\alpha={al}$')
+ax1.set_title('$\\alpha$ Variable ($\\epsilon=0.5$)')
+
+# 2. Variando Epsilon Cerradas (Alpha 1.0)
+for ep in [0.4, 0.8]:
+    t, u, _ = integrar_sistema(ep, 1.0, delta_rel, vueltas=6)
+    graficar_cartesiano(ax2, t, u, f'$\\epsilon={ep}$')
+ax2.set_title('$\\epsilon < 1$ (Cerradas)')
+
+# 3. Variando Epsilon Abiertas (Alpha 1.0)
+for ep in [1.0, 1.3]:
+    t, u, _ = integrar_sistema(ep, 1.0, delta_rel, vueltas=1)
+    graficar_cartesiano(ax3, t, u, f'$\\epsilon={ep}$')
+ax3.set_title('$\\epsilon \\geq 1$ (Abiertas)')
+
+# 4. Simultáneo (Cerradas)
+for al, ep in [(0.5, 0.4), (0.9, 0.8)]:
+    t, u, _ = integrar_sistema(ep, al, delta_rel, vueltas=6)
+    graficar_cartesiano(ax4, t, u, f'$\\alpha={al}, \\epsilon={ep}$')
+ax4.set_title('Simultáneo (Cerradas)')
+
+# 5. Simultáneo (Abierta)
+t, u, _ = integrar_sistema(1.3, 1.4, delta_rel, vueltas=1)
+graficar_cartesiano(ax5, t, u, '$\\alpha=1.4, \\epsilon=1.3$', color='brown')
+ax5.set_title('Simultáneo (Abierta)')
+
+# Formato común
+for ax in axes_cart:
+    ax.plot(0, 0, 'yo', markersize=8, markeredgecolor='black', zorder=5)
+    ax.set_xlim(-5, 5)
+    ax.set_ylim(-5, 5)
+    ax.set_aspect('equal')
+    ax.grid(True, linestyle='--', alpha=0.5)
+    ax.legend(loc='upper left', bbox_to_anchor=(1.05, 1.0), fontsize='small')
+
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+plt.show()
+
+# =====================================================================
+# --- ANIMACIÓN 3D (Eje Z = Ángulo Theta) ---
 # =====================================================================
 
 # NOTA PARA SPYDER: Si la animación no aparece, ve a: 
