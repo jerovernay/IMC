@@ -1,0 +1,121 @@
+\documentclass[]{report}
+\usepackage{amsmath}
+\usepackage[spanish]{babel}
+
+% Título y detalles del TP
+\title{Introducción al Modelado Continuo \\[0.5cm]
+	Trabajo Práctico 1 \\[0.5cm]
+	Trayectorias de Kepler y Corrección Relativista}
+
+% Sección de integrantes y grupo
+\author{
+	\textbf{Grupo: 11} \\ [1cm]
+	\begin{tabular}{llll}
+		\textbf{Apellido} & \textbf{Nombre} & \textbf{Libreta} \\ \hline
+		Wilders Azara & Santiago & 350/19  \\
+		Peralta & Martín & 428/22 \\
+		Vernay & Jerónimo & ??? \\
+	\end{tabular}
+}
+
+%Fecha
+\date{\today}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus .5ex minus .2ex}
+
+\begin{document}
+\maketitle
+%\begin{abstract}
+%\end{abstract}
+
+% --- Desarrollo de los ejercicios ---
+
+\section*{Enunciado}
+
+Una corrección relativista para el problema de dos cuerpos de Kepler, sistema Sol-planeta, puede describirse en coordenadas polares con la ecuación:
+$$
+\ddot{u}(\theta) + u(\theta) - \frac{1}{\alpha} - \delta u^{2}(\theta) = 0
+$$
+Donde $u(\theta) = \frac{1}{r(\theta)}$, el Sol se encuentra en el origen, $\alpha$ y $\delta$ son constantes. El término con $\delta$ es la corrección relativista.
+
+\section*{Ejercicio 1}
+
+\textbf{Consigna.}
+
+Formular el problema como un sistema de orden uno de la forma $\dot{y} = f (\theta, y)$. Observar que la variable independiente no es el tiempo sino ángulos en polares.
+
+\textbf{Resolución.}
+
+La ecuación original está dada por
+
+$$\ddot{u}(\theta) + u(\theta) - \frac{1}{\alpha} - \delta u^2(\theta) = 0$$
+
+Reducción de orden:
+
+\begin{equation*}
+	\begin{aligned}
+		y_1 &= u \\
+		y_2 &= \dot{u} \\
+		\dot{y_2} &= \ddot{u}
+	\end{aligned}
+	\quad \implies \quad 
+	\dot{y_2} + y_1 - 1/a - \delta y_1^2 = 0
+	\quad \implies \quad
+	\begin{aligned}
+		\dot{y_1} &= y_2 \\
+		\dot{y_2} &= \delta y_1^2 + 1/a - y_1
+	\end{aligned}
+\end{equation*}
+
+El estado del sistema queda definido por la inversa de la distancia radial ($y_1 = u(\theta)$) y su tasa de cambio respecto al ángulo ($y_2 = \dot{u}(\theta)$). Como el ángulo $\theta$, la variable independiente, no aparece de forma explicita en las ecuaciones, obtenemos un sistema autónomo no lineal de primer orden.
+
+Para justificar analíticamente que $\theta$ actúa como la única variable independiente del sistema, es necesario demostrar cómo se elimina la dependencia del tiempo t en las ecuaciones de movimiento. Este procedimiento se fundamenta en la conservación del momento angular.
+
+En coordenadas polares, el momento angular del planeta respecto al Sol se define como $L = r \times p$, donde $p = mv$ es el momento lineal. La variación temporal de esta magnitud está determinada por el torque neto aplicado sobre el sistema ($\tau = r \times F$), tal que:
+$$
+\frac{dL}{dt} = \tau
+$$
+
+En el modelo de Kepler, la única fuerza que interviene en el movimiento del planeta es la atracción gravitacional. Al tratarse de una fuerza central, su vector $\vec{F}$ actúa sobre la misma línea que une al planeta con el Sol, resultando paralelo al vector de posición radial $\vec{r}$.
+Dado que ambos vectores son paralelos, su producto vetorial se anula (y consecuentemente el torque $\tau = 0$), garantizando que el \textbf{momento angular se conserve} en el tiempo.
+
+La magnitud del momento angular se puede expresar mediante la masa $m$ y la componente tangencial de la velocidad del planeta ($v_{\theta} = r \dot{\theta}$):
+$$
+L = m r v_{\theta} = m r \left(r \dot{\theta}\right) = m r^2 \dot{\theta} = cte
+$$
+
+Dado que la masa es invariable, se deduce que:
+$$
+r^2 \dot{\theta} = cte
+$$
+
+Esta relación permite transformar el operador que deriva en función del tiempo ($\frac{d}{dt}$) usando la regla de la cadena:
+$$
+\frac{d}{dt} = \frac{d\theta}{dt} \frac{d}{d\theta} = \frac{r^2}{r^2} \frac{d\theta}{dt} \frac{d}{d\theta} = \frac{r^2 \dot{\theta}}{r^2} \frac{d}{d\theta} = \frac{cte}{r^2} \frac{d}{d\theta}
+$$
+
+Para aplicar este operador nuevo sobre la coordenada radial $r$, primero debemos obtener cómo cambia $r$ con respecto al ángulo $\theta$ (sabiendo que $u = \frac{1}{r}$):
+$$
+\frac{dr}{d\theta} = \frac{du}{d\theta} \frac{dr}{du} = - \frac{1}{u^2} \frac{du}{d\theta} 
+$$
+
+Volviendo al caso de la ecuación diferencial, reemplazamos el operador temporal y la derivada de $r$ obtenida para reescribir la velocidad radial:
+$$
+\frac{dr}{dt} = \left(\frac{cte}{r^2} \frac{d}{d\theta}\right) r = \frac{cte}{r^2} \frac{dr}{d\theta} = cte \cdot u^2 \left(-\frac{1}{u^2} \frac{du}{d\theta}\right) = - cte \ \frac{du}{d\theta}
+$$
+
+De manera análoga, se puede observar que ocurre lo mismo con la aceleración radial $\ddot{r}$: las derivadas temporales se reemplazan por derivadas respecto a $\theta$.
+
+En una ecuación diferencial ordinaria, la variable respecto a la cual se aplican las derivadas es, por definición, la variable independiente.
+Así, el tiempo desaparece por completo del modelo y queda demostrado que el estado del sistema depende exclusivamente del ángulo polar $\theta$. 
+
+\newpage
+
+\section*{Ejercicio 2}
+
+\newpage
+\section*{Ejercicio 3}
+
+
+\end{document}
