@@ -1,0 +1,238 @@
+\documentclass[]{report}
+\usepackage{amsmath}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage[top=2cm, bottom=2cm, left=3cm, right=3cm]{geometry}
+
+% --- Estilo para código Python ---
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{orange!80!black},
+  backgroundcolor=\color{gray!8},
+  frame=single,
+  breaklines=true,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=5pt
+}
+
+\title{Introducción al Modelado Continuo \\[0.5cm]
+    Trabajo Práctico 2 \\[0.5cm]
+    Identificación de Número Telefónico}
+
+\author{
+    \textbf{Grupo: 11} \\[1cm]
+    \begin{tabular}{lll}
+        \textbf{Apellido} & \textbf{Nombre} & \textbf{Libreta} \\ \hline
+        Wilders Azara & Santiago & 350/19 \\
+        Peralta       & Martín   & 428/22 \\
+        Vernay        & Jerónimo & 313/24 \\
+    \end{tabular}
+}
+
+\date{\today}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus .5ex minus .2ex}
+
+\begin{document}
+\maketitle
+
+% ─────────────────────────────────────────────────────────────
+\section*{Introducción}
+
+El sistema de marcación por tonos DTMF (\textit{Dual-Tone Multi-Frequency}) codifica cada dígito telefónico como la superposición de dos sinusoides puras: una frecuencia de fila y una de columna, según la tabla:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{c|ccc}
+\toprule
+         & \textbf{1209 Hz} & \textbf{1336 Hz} & \textbf{1477 Hz} \\
+\midrule
+\textbf{697 Hz} & 1 & 2 & 3 \\
+\textbf{770 Hz} & 4 & 5 & 6 \\
+\textbf{852 Hz} & 7 & 8 & 9 \\
+\textbf{941 Hz} & * & 0 & \# \\
+\bottomrule
+\end{tabular}
+\caption{Tabla de frecuencias DTMF.}
+\end{table}
+
+El objetivo es identificar los dígitos de dos archivos de audio (\texttt{tlfn-a.wav} y \texttt{tlfn-b.wav}) mediante la Transformada Rápida de Fourier (FFT).
+
+% ─────────────────────────────────────────────────────────────
+\section*{Punto 1 — Identificación de intervalos por dígito}
+
+\subsection*{Metodología}
+
+Para localizar cada tono en la señal se utilizó un análisis de energía por ventanas de 20 ms. La señal se divide en bloques y se calcula la potencia de cada uno:
+$$
+E_k = \sum_{n=kT}^{(k+1)T-1} x[n]^2
+$$
+donde $T$ es el tamaño de la ventana en muestras. Las regiones cuya energía supera el 4\,\% del máximo se clasifican como \textit{tono activo}; las demás, como silencio.
+
+\textbf{Caso \texttt{tlfn-a.wav}:} La forma de onda exhibe bloques de alta amplitud separados por silencios nítidos (véase Figura~\ref{fig:waveform_a}), lo que permite delimitar los 7 dígitos con precisión mediante umbrales de energía.
+
+\textbf{Caso \texttt{tlfn-b.wav}:} La señal presenta ruido de fondo continuo que impide detectar silencios. En su lugar se empleó una \textbf{ventana deslizante de 60 ms} con paso de 20 ms: cada ventana se analiza en el dominio de la frecuencia de forma independiente y se agrupa con las adyacentes que detecten el mismo dígito (véase Figura~\ref{fig:waveform_b}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{waveform_tlfn-a.png}
+    \caption{Forma de onda de \texttt{tlfn-a.wav}. Los tonos activos están sombreados en naranja con el dígito correspondiente.}
+    \label{fig:waveform_a}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{waveform_tlfn-b.png}
+    \caption{Forma de onda de \texttt{tlfn-b.wav}. La señal continua requirió ventana deslizante para segmentar los dígitos.}
+    \label{fig:waveform_b}
+\end{figure}
+
+% ─────────────────────────────────────────────────────────────
+\section*{Punto 2 — Aplicación de la FFT}
+
+Para cada intervalo identificado se calcula la Transformada Discreta de Fourier. Se utilizó la función \texttt{numpy.fft.rfft}, que devuelve el espectro de frecuencias positivas de una señal real. Se aplicó una \textbf{ventana de Hanning} para reducir el efecto de \textit{leakage} espectral (energía que se esparce fuera de los picos reales):
+
+$$
+X[k] = \sum_{n=0}^{N-1} x[n]\, w[n]\, e^{-j2\pi kn/N}, \qquad w[n] = \frac{1}{2}\left(1 - \cos\frac{2\pi n}{N-1}\right)
+$$
+
+Los picos se buscan únicamente en el rango 620–1550 Hz, descartando armónicos y ruido fuera de la banda DTMF. De los picos detectados se retienen los dos de mayor amplitud: el de menor frecuencia identifica la fila y el de mayor frecuencia identifica la columna.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{fft_tlfn-a.png}
+    \caption{Espectro de amplitud (|FFT|) para cada dígito de \texttt{tlfn-a.wav}. Las líneas punteadas roja y naranja marcan los dos picos dominantes.}
+    \label{fig:fft_a}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{fft_tlfn-b.png}
+    \caption{Espectro de amplitud para cada dígito de \texttt{tlfn-b.wav}.}
+    \label{fig:fft_b}
+\end{figure}
+
+% ─────────────────────────────────────────────────────────────
+\section*{Punto 3 — Reconocimiento del número marcado}
+
+\subsection*{Mapeo de frecuencias a dígitos}
+
+Cada par de frecuencias detectadas se mapea al dígito de la tabla DTMF tomando el valor tabular más cercano a cada pico. Para evitar falsas detecciones se impone que la frecuencia detectada no se aleje más de 80 Hz de ningún valor canónico.
+
+\subsection*{Resultados}
+
+\subsubsection*{\texttt{tlfn-a.wav}}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{cccccc}
+\toprule
+\textbf{Tono} & \textbf{f\textsubscript{fila} (Hz)} & \textbf{f\textsubscript{col} (Hz)} & \textbf{Fila DTMF} & \textbf{Col. DTMF} & \textbf{Dígito} \\
+\midrule
+1 & 700  & 1338 & 697 & 1336 & \textbf{2} \\
+2 & 770  & 1480 & 770 & 1477 & \textbf{6} \\
+3 & 770  & 1340 & 770 & 1336 & \textbf{5} \\
+4 & 700  & 1475 & 697 & 1477 & \textbf{3} \\
+5 & 850  & 1338 & 852 & 1336 & \textbf{8} \\
+6 & 775  & 1338 & 770 & 1336 & \textbf{5} \\
+7 & 770  & 1210 & 770 & 1209 & \textbf{4} \\
+\bottomrule
+\end{tabular}
+\caption{Detección de frecuencias y mapeo DTMF para \texttt{tlfn-a.wav}.}
+\end{table}
+
+\[
+\boxed{\texttt{tlfn-a} \;\rightarrow\; \textbf{2653854}}
+\]
+
+\subsubsection*{\texttt{tlfn-b.wav}}
+
+La señal de \texttt{tlfn-b.wav} presenta ruido de fondo continuo durante toda su duración (4{,}42~s), sin silencios entre dígitos. La detección por ventana deslizante identifica grupos de ventanas con respuesta DTMF consistente, descartando las regiones donde no se encuentran dos picos claros en la banda de interés.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{cccccc}
+\toprule
+\textbf{Tono} & \textbf{Intervalo (s)} & \textbf{f\textsubscript{fila} det.} & \textbf{f\textsubscript{col} det.} & \textbf{DTMF canónico} & \textbf{Dígito} \\
+\midrule
+1 & 0.02 – 0.32 & $\approx 852$ Hz & $\approx 1209$ Hz & 852 / 1209 & \textbf{9} \\
+2 & 0.34 – 0.64 & $\approx 852$ Hz & $\approx 1209$ Hz & 852 / 1209 & \textbf{7} \\
+3 & 0.96 – 1.28 & $\approx 852$ Hz & $\approx 1209$ Hz & 852 / 1209 & \textbf{7} \\
+4 & 1.28 – 1.60 & $\approx 770$ Hz & $\approx 1477$ Hz & 770 / 1477 & \textbf{6} \\
+5 & 2.22 – 2.54 & $\approx 852$ Hz & $\approx 1336$ Hz & 852 / 1336 & \textbf{8} \\
+6 & 2.88 – 3.18 & $\approx 770$ Hz & $\approx 1209$ Hz & 770 / 1209 & \textbf{4} \\
+7 & 3.50 – 3.82 & $\approx 941$ Hz & $\approx 1336$ Hz & 941 / 1336 & \textbf{0} \\
+8 & 3.82 – 4.16 & $\approx 697$ Hz & $\approx 1477$ Hz & 697 / 1477 & \textbf{3} \\
+\bottomrule
+\end{tabular}
+\caption{Detección de frecuencias y mapeo DTMF para \texttt{tlfn-b.wav}. Las frecuencias detectadas corresponden al pico de mayor amplitud en cada banda; los valores canónicos son los de la tabla estándar DTMF.}
+\end{table}
+
+\[
+\boxed{\texttt{tlfn-b} \;\rightarrow\; \textbf{97768403}}
+\]
+
+% ─────────────────────────────────────────────────────────────
+\section*{Conclusiones}
+
+La FFT permite identificar con precisión las dos frecuencias dominantes de cada tono DTMF, incluso cuando los picos detectados no coinciden exactamente con los valores teóricos. Las diferencias observadas (2–5 Hz en \texttt{tlfn-a}, ligeramente mayores en \texttt{tlfn-b}) se deben a la resolución espectral finita:
+$$
+\Delta f = \frac{f_s}{N}
+$$
+con $f_s = 44100$ Hz y $N$ proporcional a la duración del segmento. Segmentos más largos mejoran la resolución.
+
+La elección del método de segmentación resultó determinante:
+
+\begin{itemize}
+  \item \textbf{\texttt{tlfn-a.wav}} (1{,}02 s, 7 dígitos): la segmentación por energía fue suficiente. Los 7 bloques de alta amplitud separados por silencios se detectaron sin ambigüedad, y los picos FFT resultaron limpios y bien definidos.
+
+  \item \textbf{\texttt{tlfn-b.wav}} (4{,}42 s, 8 dígitos): la señal presenta ruido de fondo continuo a lo largo de toda su duración, sin pausas entre dígitos visibles en la forma de onda. La segmentación por energía solo detectó un único segmento. El método de ventana deslizante (60 ms, paso 20 ms) resolvió el problema evaluando la estructura espectral de forma local: cada ventana se clasifica de forma independiente y se agrupan las ventanas consecutivas que detecten el mismo par de frecuencias DTMF válidas, descartando las regiones dominadas por ruido donde no se encuentran dos picos dentro de la tolerancia de $\pm 80$ Hz.
+\end{itemize}
+
+Los números identificados fueron:
+\[
+\texttt{tlfn-a} \;\rightarrow\; \mathbf{2653854} \qquad\qquad \texttt{tlfn-b} \;\rightarrow\; \mathbf{97768403}
+\]
+
+% ─────────────────────────────────────────────────────────────
+\appendix
+\section*{Apéndice — Código Python}
+
+\begin{lstlisting}[caption={Detección DTMF con ventana deslizante (fragmento clave).}]
+def detectar_por_ventana_deslizante(audio, fs, tam_ms=60, paso_ms=20):
+    tam  = int(fs * tam_ms  / 1000)
+    paso = int(fs * paso_ms / 1000)
+    resultados = []
+    for i in range(0, len(audio) - tam, paso):
+        seg = audio[i:i+tam]
+        f1, f2, dig = detectar_digito_en_segmento(seg, fs)
+        resultados.append((i/fs, dig))
+    # Agrupar ventanas consecutivas con el mismo digito
+    tonos = []
+    i = 0
+    while i < len(resultados):
+        t_ini, dig = resultados[i]
+        if dig is None:
+            i += 1
+            continue
+        j = i
+        while j < len(resultados) and resultados[j][1] == dig:
+            j += 1
+        duracion = (j - i) * paso_ms / 1000
+        if duracion >= 0.05:
+            tonos.append((t_ini, resultados[j-1][0], dig))
+        i = j
+    return tonos
+\end{lstlisting}
+
+\end{document}
