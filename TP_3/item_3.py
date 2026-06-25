@@ -18,14 +18,13 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from poisson_common import (
-    mesh, build_sparse, solve_sparse, exact_erf, inf_error,
+    mesh, build_sparse, solve_sparse, exact_erf, inf_error, f_erf, save_figure
 )
 
 FIGDIR = os.path.join(os.path.dirname(__file__), "figuras")
 os.makedirs(FIGDIR, exist_ok=True)
 
 ALPHA, BETA = 2.0, 1.0
-fexp = lambda x: np.exp(-x ** 2)
 
 KMAX = 24   # hasta donde intentamos subir el refinamiento
 
@@ -39,7 +38,7 @@ def item3():
     for k in range(3, KMAX + 1):
         n, M, h, _ = mesh(k)
         try:
-            A, b, x = build_sparse(k, fexp, ALPHA, BETA)
+            A, b, x = build_sparse(k, f_erf, ALPHA, BETA)
             U = solve_sparse(A, b)
         except (MemoryError, RuntimeError) as e:
             # spsolve/SuperLU se queda sin memoria al factorizar (SUPERLU_MALLOC):
@@ -72,31 +71,32 @@ def item3():
                label=f"rama de convergencia (pendiente={slope:.2f})")
     ref = ec[0] * (hc / hc[0]) ** 2
     plt.loglog(hc, ref, "k--", lw=1, label="referencia orden 2")
-    plt.gca().invert_xaxis()
-    plt.xlabel("h"); plt.ylabel(r"$\|u_{num}-u_{ex}\|_\infty$")
-    plt.title("Item 3: error vs h (esparso, f=e^{-x^2})")
     plt.annotate("redondeo ~h$^{-2}$", xy=(hs[-1], errs[-1]),
                  xytext=(hs[-1] * 6, errs[-1] * 0.4),
                  arrowprops=dict(arrowstyle="->", lw=1))
-    plt.grid(True, which="both", ls=":"); plt.legend()
+    
     out1 = os.path.join(FIGDIR, "item3_error_vs_h.png")
-    plt.tight_layout(); plt.savefig(out1, dpi=130); plt.close()
-    print(f"\n  Figura guardada: {out1}")
+    save_figure(out1, "Item 3: error vs h (esparso, f=e^{-x^2})", "h", r"$\|u_{num}-u_{ex}\|_\infty$", invert_x=True)
+    print()
 
-    # Figura 2: perfil de la solucion para un k moderado
-    kp = 8
-    A, b, x = build_sparse(kp, fexp, ALPHA, BETA)
+    # Figura 2: perfil de la solucion para el mayor k resuelto
+    kp = last_ok
+    print(f"\n  Generando perfil de la solucion para k={kp}...")
+    A, b, x = build_sparse(kp, f_erf, ALPHA, BETA)
     U = solve_sparse(A, b)
     u_num = np.concatenate([[ALPHA], U])
+    
+    # Submuestrear para no crashear la memoria al graficar millones de puntos
+    step = max(1, len(x) // 5000)
+    x_plot = x[::step]
+    u_num_plot = u_num[::step]
+    
     plt.figure(figsize=(7, 5))
-    plt.plot(x, exact_erf(x, ALPHA, BETA), "-", lw=2, label="exacta (erf)")
-    plt.plot(x, u_num, "--", lw=1.5, label=f"numerica (k={kp})")
-    plt.xlabel("x"); plt.ylabel("u(x)")
-    plt.title("Item 3: perfil de la solucion, f=e^{-x^2}")
-    plt.grid(True, ls=":"); plt.legend()
+    plt.plot(x_plot, exact_erf(x_plot, ALPHA, BETA), "-", lw=2, label="exacta (erf)")
+    plt.plot(x_plot, u_num_plot, "--", lw=1.5, label=f"numerica (k={kp}, submuestreo)")
+    
     out2 = os.path.join(FIGDIR, "item3_perfil.png")
-    plt.tight_layout(); plt.savefig(out2, dpi=130); plt.close()
-    print(f"  Figura guardada: {out2}")
+    save_figure(out2, "Item 3: perfil de la solucion, f=e^{-x^2}", "x", "u(x)")
     return last_ok, slope
 
 
