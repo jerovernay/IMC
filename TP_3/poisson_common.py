@@ -12,9 +12,8 @@ Esquema (igual idea que el ejemplo de la catedra, pero con Neumann en x=1):
     - Borde x=1 (Neumann): diferencia backward de orden 2 a 3 nodos
         u'(1) ~ ( u[M-2] - 4 u[M-1] + 3 u[M] ) / (2h) = beta
 
-Malla:
-    n = 2**k            (parametro de refinamiento, EDITABLE)
-    M = 2*n + 1
+Malla (la del enunciado):
+    M = 2**n + 1        (n = parametro de refinamiento, entero >= 1, EDITABLE)
     h = 1 / M
     x[j] = h*j,  j = 0,...,M   ->  x[0] = 0,  x[M] = 1
 
@@ -37,13 +36,16 @@ from scipy.special import erf
 # ---------------------------------------------------------------------------
 # Malla
 # ---------------------------------------------------------------------------
-def mesh(k):
-    """Devuelve (n, M, h, x) para el indice de refinamiento k.  n = 2**k."""
-    n = 2 ** k
-    M = 2 * n + 1
+def mesh(n):
+    """Devuelve (M, h, x) para el parametro de refinamiento n.
+
+    Malla del enunciado: j = 0,...,2**n + 1, con h = 1/(2**n + 1).
+    Es decir M = 2**n + 1 (indice maximo) y x[M] = 1.
+    """
+    M = 2 ** n + 1
     h = 1.0 / M
-    x = np.array([h * j for j in range(M + 1)])   # x[0]=0, ..., x[M]=1
-    return n, M, h, x
+    x = np.arange(M + 1) * h          # x[0]=0, ..., x[M]=1  (equivale a h*j)
+    return M, h, x
 
 
 # ---------------------------------------------------------------------------
@@ -66,9 +68,9 @@ def _rhs(M, h, x, f, alpha, beta):
 # Ensamblado de A:  tridiagonal de las diferencias centradas + fila de Neumann.
 # La fila de Neumann (ultima) rompe la tridiagonal: la sobrescribimos a mano.
 # ---------------------------------------------------------------------------
-def build_dense(k, f, alpha, beta):
+def build_dense(n, f, alpha, beta):
     """Construye (A, b, x) con A densa (np.ndarray M x M)."""
-    n, M, h, x = mesh(k)
+    M, h, x = mesh(n)
 
     # Tridiagonal de diferencias centradas: -2 en la diagonal, +1 en las codiagonales.
     A = (np.diag(-2.0 * np.ones(M))
@@ -85,12 +87,12 @@ def build_dense(k, f, alpha, beta):
     return A, b, x
 
 
-def build_sparse(k, f, alpha, beta):
+def build_sparse(n, f, alpha, beta):
     """Construye (A, b, x) con A esparza (scipy.sparse, formato CSC para spsolve)."""
-    n, M, h, x = mesh(k)
+    M, h, x = mesh(n)
 
     # Misma tridiagonal pero como matriz esparza. offsets=[0,1,-1] = diag, super, sub.
-    # Usamos formato "lil" (List of Lists) inicialmente: SciPy recomienda este formato 
+    # Usamos formato "lil" (List of Lists) inicialmente: SciPy recomienda este formato
     # fuertemente cuando se necesita construir o modificar una matriz esparsa entrada
     # por entrada (como haremos con la fila de Neumann). Construirla directo en CSR/CSC
     # resulta sumamente ineficiente.
@@ -122,11 +124,6 @@ def solve_sparse(A, b):
 # ---------------------------------------------------------------------------
 # Soluciones exactas y funciones RHS f(x)
 # ---------------------------------------------------------------------------
-def exact_quadratic(x, alpha, beta):
-    """Solucion exacta para f(x)=3:  u(x) = 1.5 x^2 + (beta-3) x + alfa."""
-    return 1.5 * x ** 2 + (beta - 3.0) * x + alpha
-
-
 f_erf = lambda x: np.exp(-x ** 2)
 
 def exact_erf(x, alpha, beta):
