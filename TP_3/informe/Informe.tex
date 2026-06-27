@@ -64,9 +64,9 @@ $n$ & $M=2^n+1$ & $h=1/M$ \\
 23 & 8388609  & $1{,}19\times10^{-7}$ \\
 \bottomrule
 \end{tabular}
-\caption{Mallas usadas: parámetro de refinamiento $n$, número de incógnitas $M$ y
-paso $h$. $n=3$ es el caso de inspección del Punto~1; $n=3,\dots,14$ el barrido de
-error del Punto~2; $n=23$ el mayor resuelto en el Punto~3.}
+\caption{Mallas usadas: índice de refinamiento $k$, $n$, número de incógnitas $M$ y
+	paso $h$. La instancia $k=3$ es el caso de inspección del Punto~1. Se observa también $k=3,\dots,14$ el barrido de
+	error del Punto~2 y $k=22$ el mayor resuelto en el Punto~3.}
 \label{tab:malla}
 \end{table}
 
@@ -85,8 +85,11 @@ u'(1)\approx\frac{3u_M-4u_{M-1}+u_{M-2}}{2h}=\beta.
 \end{equation}
 Esta expresión mantiene la consistencia con el esquema interior al presentar también un error de orden $O(h^2)$. Al ser ambas aproximaciones lineales respecto a los valores nodales, el problema se reduce a un sistema de ecuaciones lineales $Au=b$. Es importante notar que el número de condición de la matriz, $\kappa(A)$, crece proporcionalmente a $h^{-2}$, lo cual incrementará el impacto del error de redondeo a medida que se refine la malla.
 
+\pagebreak
+
 % ─────────────────────────────────────────────────────────────
-\section*{Punto 1 — Planteo del sistema $Au=b$}
+
+\section*{Punto 1 -- Planteo del sistema $Au=b$}
 
 Ordenamos las incógnitas como $u=(u_1,\dots,u_M)^\top$. Las filas interiores
 ($j=1,\dots,M-1$) usan \eqref{eq:centrada}; en la primera ($j=1$) el dato $u_0=\alpha$
@@ -116,7 +119,7 @@ b=\begin{pmatrix}
 \textbf{Verificación ($n=3$):} Para este nivel de refinamiento, se tiene $M=2^3+1=9$ incógnitas ($h=1/9\approx0{,}1111$, de modo que $1/h^2=81$ y $1/(2h)=4{,}5$). La matriz $A$ presenta una diagonal principal de valor $-162$, codiagonales de $81$ y una última fila con los coeficientes $(4{,}5,\,-18,\,13{,}5)$. El error en norma infinito obtenido es de aproximadamente $0{,}19$, un valor significativo en comparación con la norma de la solución analítica. Este error se debe a que la función seno de alta frecuencia ($128\pi$) se encuentra insuficientemente muestreada con $9$ nodos, fenómeno que se analiza en detalle a continuación.
 
 % ─────────────────────────────────────────────────────────────
-\section*{Punto 2 — Error y orden del método}
+\section*{Punto 2 -- Error y orden del método}
 
 Para $f(x)=\text{sen}(128\pi x)$, integrando dos veces e imponiendo las condiciones de contorno $\alpha=2$, $\beta=1$, la solución exacta es
 \begin{equation}
@@ -151,7 +154,7 @@ Como ilustra la Figura~\ref{fig:item2_perfil}, para $n=6$ ($M=65$ nodos) la mall
 \end{figure}
 
 % ─────────────────────────────────────────────────────────────
-\section*{Punto 3 — $f(x)=e^{-x^2}$ con matrices esparsas}
+\section*{Punto 3 -- $f(x)=e^{-x^2}$ con matrices esparsas}
 
 Repetimos el planteo del Punto~1 para $f(x)=e^{-x^2}$, $\alpha=2$, $\beta=1$, ahora
 ensamblando $A$ como matriz esparsa (\texttt{scipy.sparse}) y resolviendo con
